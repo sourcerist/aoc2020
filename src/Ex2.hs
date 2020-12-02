@@ -43,12 +43,21 @@ input = many (inputLine <* whitespace)
 isValid InputLine{..} = cnt >= minAppearances && cnt <= maxAppearances where 
     cnt = (fromIntegral . length . filter (==compareChar)) password
 
-run path = do
+isValidAlt InputLine{..} = length xs == 1 where
+    xs = filter (\x -> x == parm1 || x == parm2) (zip [1..] password)
+    parm1 = (minAppearances, compareChar)
+    parm2 = (maxAppearances, compareChar)
+
+run = runInternal isValid
+
+runAlt = runInternal isValidAlt
+
+runInternal f path = do
     content <- readFile path
     inputLines <- case parse input "" content of
                     Right x -> return x
                     Left e -> fail (show e)
-    let validCount = (length . filter isValid) inputLines           
+    let validCount = (length . filter f) inputLines           
     putStrLn $ "Valid count: " <> show validCount
 
 

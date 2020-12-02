@@ -13,3 +13,4 @@ main = do
 run ["ex1", path] = Ex1.runN 2 path
 run ["ex1b", path] = Ex1.runN 3 path
 run ["ex2", path] = Ex2.run path
+run ["ex2b", path] = Ex2.runAlt path
