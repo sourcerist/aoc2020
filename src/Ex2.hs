@@ -4,7 +4,7 @@ module Ex2 where
 
 import Text.Parsec.String (Parser)
 import Text.Parsec
-import Control.Monad (void)
+    ( char, digit, noneOf, oneOf, many1, many, parse )
 
 number :: Parser Integer
 number = read <$> many1 digit
@@ -33,12 +33,6 @@ whitespace = many $ oneOf spaceChars
 
 input :: Parser [InputLine]
 input = many (inputLine <* whitespace)
-
--- >>> parse input "" $ "1-7 j: jkjlhjh \r\n 17-19 z: zzzvzzzzzzzzzzzzzzzg"
--- Right [InputLine {compareChar = 'j', minAppearances = 1, maxAppearances = 7, password = "jkjlhjh"},InputLine {compareChar = 'z', minAppearances = 17, maxAppearances = 19, password = "zzzvzzzzzzzzzzzzzzzg"}]
-
--- >>> isValid $ InputLine {compareChar = 'j', minAppearances = 1, maxAppearances = 7, password = "jkjlhjh"}
--- True
 
 isValid InputLine{..} = cnt >= minAppearances && cnt <= maxAppearances where 
     cnt = (fromIntegral . length . filter (==compareChar)) password
