@@ -15,10 +15,8 @@ import Debug.Trace (trace)
 
 data BagRequirementEntry = BagRequirementEntry
     { bagColor :: String
-    , containBags :: Set (Integer, String) }
+    , containBags :: [(Integer, String)] }
     deriving (Eq, Ord, Show)
-
-
 
 number :: Parser Integer
 number = read <$> many1 digit
@@ -29,8 +27,8 @@ number = read <$> many1 digit
 bagRequirementEntry :: Parser BagRequirementEntry
 bagRequirementEntry = do
     bagColor <- anyChar `manyTill` try (string " bags contain ")
-    containBags <- (try (string "no other bags") $> Set.empty) 
-               <|> (Set.fromList <$> containsClause `sepBy1` char ',')
+    containBags <- (try (string "no other bags") $> []) 
+               <|> (containsClause `sepBy1` char ',')
     char '.'
     newline
     return BagRequirementEntry {..} where
@@ -47,22 +45,19 @@ bagRequirementEntries = do
     eof
     return entries
 
-
 buildReverseLookup :: [BagRequirementEntry] -> Map String (Set String)
 buildReverseLookup = foldl' insertOrAdd Map.empty where
-    insertOrAdd m BagRequirementEntry{..} = Set.foldl' (insertOrAdd' bagColor) m (Set.map snd containBags) --Map.insertWith Set.union bagColor (Set.map snd containBags) m
+    insertOrAdd m BagRequirementEntry{..} = foldl' (insertOrAdd' bagColor) m (fmap snd containBags) 
     insertOrAdd' c m x = Map.insertWith Set.union x (Set.singleton c) m
-    
-
-buildLookup :: [BagRequirementEntry] -> Map String (Set String)
-buildLookup = foldl' insertOrAdd Map.empty where
-    insertOrAdd m BagRequirementEntry{..} = Map.insertWith Set.union bagColor (Set.map snd containBags) m
 
 findAll :: String -> Map String (Set String) -> Set String
 findAll k m = 
     case Map.lookup k m of 
         Just s -> Set.union s (Set.unions . Set.map (`findAll` m) $ s)
-        Nothing -> Set.empty 
+        Nothing -> error $ "Invalid value: " <> k 
+    
+buildLookup :: [BagRequirementEntry] -> Map String BagRequirementEntry
+buildLookup = Map.fromList . fmap (\x -> (bagColor x, x))
 
 run path = do
     content <- readFile path
@@ -71,4 +66,19 @@ run path = do
                  Left e -> fail (show e)
     let m = buildReverseLookup entries
     print . length . findAll "shiny gold" $ m
+
+countAll :: String -> Map String BagRequirementEntry -> Integer
+countAll k m = 
+    case Map.lookup k m of
+        Just BagRequirementEntry{..} -> trace (show x) x where x = 1 + (sum . fmap (\(cnt, k') -> cnt * countAll k' m)) containBags
+        Nothing -> error $ "Invalid value: " <> k
+
+runAlt path = do
+    content <- readFile path
+    entries <- case parse bagRequirementEntries "" content of
+                 Right xs -> return xs
+                 Left e -> fail (show e)
+    --mapM_ print entries
+    let m = Map.fromList . fmap (\x -> (bagColor x, x)) $ entries
+    print $ countAll "shiny gold" m -1
 

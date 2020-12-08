@@ -29,3 +29,4 @@ run ["ex5b", path] = Ex5.runAlt path
 run ["ex6", path] = Ex6.run path
 run ["ex6b", path] = Ex6.runAlt path
 run ["ex7", path] = Ex7.run path
+run ["ex7b", path] = Ex7.runAlt path
