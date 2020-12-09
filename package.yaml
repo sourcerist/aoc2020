@@ -25,6 +25,8 @@ dependencies:
 - parsec
 - containers
 - split
+- vector
+- mtl
 
 library:
   source-dirs: src

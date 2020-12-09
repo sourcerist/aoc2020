@@ -8,6 +8,7 @@ import qualified Ex4
 import qualified Ex5
 import qualified Ex6
 import qualified Ex7
+import qualified Ex8
 
 main :: IO ()
 main = do
@@ -30,3 +31,4 @@ run ["ex6", path] = Ex6.run path
 run ["ex6b", path] = Ex6.runAlt path
 run ["ex7", path] = Ex7.run path
 run ["ex7b", path] = Ex7.runAlt path
+run ["ex8", path] = Ex8.run path
