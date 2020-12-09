@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module Ex8 where
 
-import Data.Vector
+import Data.Vector (Vector, fromList, toList, (!), (//))
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Text.Parsec.String (Parser)
@@ -10,8 +10,7 @@ import Text.Parsec
 import Data.Functor (($>))
 import Control.Monad (guard)
 import Control.Monad.State
-import Control.Monad.Except
-import Prelude hiding (init, length)
+import Data.Maybe (listToMaybe, maybeToList)
 
 data Instruction
     = Jump Int
@@ -50,14 +49,14 @@ type AppState = State WalkState
 execInstr :: WalkState -> Instruction -> WalkState
 execInstr WalkState{..} (Jump n) = WalkState (Set.insert currentPos visited) c acc where c = currentPos + fromIntegral n
 execInstr WalkState{..} (Accumulate n) = WalkState (Set.insert currentPos visited) c (acc + fromIntegral n) where c = currentPos + 1
-
+execInstr WalkState{..} (Nop _) = WalkState (Set.insert currentPos visited) c acc where c = currentPos + 1
 
 walkUntilRepeat :: Vector Instruction -> AppState ProgramOutput
 walkUntilRepeat instructions = do
     s@WalkState{..} <- get
-    if currentPos < 0 then 
+    if currentPos < 0 || currentPos > length instructions then 
         return Invalid
-    else if currentPos > length instructions then 
+    else if currentPos == length instructions then 
         return $ Terminated acc
     else if currentPos `Set.member` visited then 
         return $ InfiniteLoop acc
@@ -76,10 +75,24 @@ run path = do
     let (r,_) = runState (walkUntilRepeat instructions) (WalkState Set.empty 0 0)
     print r
 
-    
-    
-    --if currentPos < minIndex instructions then fail "Position cannot be less than " <> show minIndex instructions
-    --else if currentPos > maxIndex instructions then fail "Position cannot be greater than " <> show maxIndex instructions
-    --else 
+terminated (Terminated x) = Just x
+terminated _ = Nothing
 
+nopSwitch (Nop n) = Just (Jump n)
+nopSwitch (Jump n) = Just (Nop n)
+nopSwitch _ = Nothing
+
+findBadInstr instructions = listToMaybe $ do
+    (i, instr) <- zip [0..] (toList instructions)
+    newInstr <- maybeToList . nopSwitch $ instr
+    let instructions' = instructions // [(i, newInstr)]
+    let (r,_) = runState (walkUntilRepeat instructions') (WalkState Set.empty 0 0)
+    (maybeToList . terminated) r
+
+runAlt path = do
+    contents <- readFile path
+    instructions <- fromList <$> parseInstructions contents 
+    print $ findBadInstr instructions
+
+    
 
